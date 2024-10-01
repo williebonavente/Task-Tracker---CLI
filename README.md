@@ -13,5 +13,5 @@ node task-cli.js list
 node task-cli.js list --status=done
 ```
 
-**1st** Backend Project the RoadMap.sh 
+**1st** Backend Project in RoadMap.sh 
 https://roadmap.sh/projects/task-tracker
