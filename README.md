@@ -6,7 +6,7 @@
 node task-cli.js add --description="Learning C"
 ```
 ```marking as done
-node task-cli.js update --id=1 --description="Buy groceries and cook dinner"
+node task-cli.js update --id=1 --description="Learning C"
 ```
 ```listing all status accordingly
 node task-cli.js list
