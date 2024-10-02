@@ -73,18 +73,18 @@ yargs.command({
 });
 
 yargs.command({
-    command:'todo',
-    describe:'Mark a task as todo',
-    handler(argv){
+    command: 'todo',
+    describe: 'Mark a task as todo',
+    handler(argv) {
         loadTasks();
         const targetId = argv._[1];
         const task = tasks.find(task => task.id === targetId);
-        if(task){
+        if (task) {
             task.status = 'todo';
             task.updatedAt = formatDate(new Date());
             saveTasks();
             console.log(`Task marked as todo: (ID ${task.id})`);
-        }else{
+        } else {
             console.log("Task not found");
         }
     }
@@ -92,7 +92,7 @@ yargs.command({
 
 // Mark task as in-progress
 yargs.command({
-    command: 'in-progress',
+    command: 'mark-in-progress',
     describe: 'Mark a task as in progress',
     handler(argv) {
         loadTasks();
@@ -138,9 +138,8 @@ yargs.command({
         if (argv._[1]) {
             filteredTasks = tasks.filter(task => task.status === argv._[1]);
         }
-        console.log('\nTasks:');
-        filteredTasks.forEach(task => {
-            console.log(`ID: ${task.id}, Description: ${task.description}, Status: ${task.status}`);
+        filteredTasks.length === 0 ? console.log("No tasks found") : filteredTasks.forEach(task => {
+            console.log(`ID: ${task.id}, Description: ${task.description}`);
         });
     }
 });
