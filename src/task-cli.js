@@ -1,16 +1,8 @@
-// Add, Update, and Delete tasks
-// Mark tasks as done
-// Lists all tasks
-// Lists all tasks that are done
-// Lists all tasks that are not done
-// Lists all tasks that in progress
-
-// task-cli.js
 const yargs = require('yargs');
 const fs = require('fs');
-const { type } = require('os');
+const { format } = require('path');
 
-// In-memory task storage  (you could persist this using a file or database)
+// In-memory task storage
 let tasks = [];
 
 // Load tasks from a file (optional)
@@ -29,55 +21,49 @@ const saveTasks = () => {
     fs.writeFileSync('./tasks.json', dataJSON);
 };
 
-// Add
+
 yargs.command({
     command: 'add',
     describe: 'Add a new task',
-    builder: {
-        description: {
-            describe: 'Task description',
-            demandOption: true,
-            type: 'string',
-        }
-    },
-
     handler(argv) {
         loadTasks();
+
+        const description = argv._[1]; // Get the second positional argument, which is the task description
+
+        if (!description) {
+            console.log("Task description is required.");
+            return;
+        }
+
         const newTask = {
             id: tasks.length + 1,
-            description: argv.description,
+            description: description, // Use the description from argv._
             status: 'todo',
-            createdAt: new Date().toDateString(),
-            updatedAt: new Date().toLocaleDateString()
+            createdAt: formatDate(new Date()),
+            updatedAt: formatDate(new Date()),
         };
+
         tasks.push(newTask);
         saveTasks();
-        console.log(`Task added: (ID ${newTask.id})`);
+
+        console.log(`Task added successfully (ID: ${newTask.id})`);
     }
 });
 
-// Update 
+
+
+// Update a task's description using positional arguments
 yargs.command({
     command: 'update',
     describe: 'Update a task',
-    builder: {
-        id: {
-            describe: 'Task ID',
-            demandOption: true,
-            type: 'number'
-        },
-        description: {
-            describe: 'Task description',
-            demandOption: true,
-            type: 'string'
-        }
-    },
     handler(argv) {
+        const targetId = argv._[1]; // Get the first positional argument, which is the task ID
+        const newDescription = argv._[2]; // Get the second positional argument, which is the new task description
         loadTasks();
-        const task = tasks.find(task => task.id === argv.id);
+        const task = tasks.find(task => task.id === targetId);
         if (task) {
-            task.description = argv.description;
-            task.updatedAt = new Date().toISOString();
+            task.description = newDescription;
+            task.updatedAt = formatDate(new Date());
             saveTasks();
             console.log(`Task updated successfully: (ID ${task.id})`);
         } else {
@@ -87,64 +73,53 @@ yargs.command({
 });
 
 yargs.command({
-    command: 'delete',
-    describe: 'Delete a task',
-    builder: {
-        id: {
-            describe: 'Task ID',
-            demandOption: true,
-            type: 'number'
-        }
-    },
-
-    handler(argv) {
+    command:'todo',
+    describe:'Mark a task as todo',
+    handler(argv){
         loadTasks();
-        tasks = tasks.filter(task => task.id !== argv.id);
-        saveTasks();
-        console.log('Task deleted successfully');
-    }
-});
-
-// Mark task as in progress
-yargs.command({
-    command: 'mark-in-progress',
-    describe: 'Mark a task as in progress',
-    builder: {
-        id: {
-            describe: 'Task ID',
-            demandOption: true,
-            type: 'number'
-        }
-    },
-    handler(argv) {
-        loadTasks();
-        const task = tasks.find(task => task.id === argv.id);
-        if (tasks) {
-            task.status = 'in-progress';
+        const targetId = argv._[1];
+        const task = tasks.find(task => task.id === targetId);
+        if(task){
+            task.status = 'todo';
+            task.updatedAt = formatDate(new Date());
             saveTasks();
-            console.log(`Task marked as in progress: (ID ${task.id})`);
-        } else {
-            console.log("Task not found.")
+            console.log(`Task marked as todo: (ID ${task.id})`);
+        }else{
+            console.log("Task not found");
         }
     }
 });
 
+// Mark task as in-progress
+yargs.command({
+    command: 'in-progress',
+    describe: 'Mark a task as in progress',
+    handler(argv) {
+        loadTasks();
+        const targetId = argv._[1]; // Get the first positional argument, which is the task ID
+        const task = tasks.find(task => task.id === targetId);
+        if (task) {
+            task.status = 'in-progress';
+            task.updatedAt = formatDate(new Date());
+            saveTasks();
+            console.log(`Task marked as in-progress: (ID ${task.id})`);
+        } else {
+            console.log("Task not found.");
+        }
+    }
+});
+
+// Mark task as done
 yargs.command({
     command: 'mark-done',
     describe: 'Mark a task as done',
-    builder: {
-        id: {
-            describe: 'Task ID',
-            demandOption: true,
-            type: 'number',
-        }
-    },
     handler(argv) {
+        const targetTask = argv._[1];
         loadTasks();
-        const task = tasks.find(task => task.id === argv.id);
+        const task = tasks.find(task => task.id === targetTask);
         if (task) {
             task.status = 'done';
-            task.updatedAt = new Date().toISOString();
+            task.updatedAt = formatDate(new Date());
             saveTasks();
             console.log(`Task marked as done: (ID ${task.id})`);
         } else {
@@ -157,23 +132,52 @@ yargs.command({
 yargs.command({
     command: 'list',
     describe: 'List all tasks or by status',
-    builder: {
-        status: {
-            describe: 'Filter by status (todo, in-progress, done)',
-            type: 'string'
-        }
-    },
     handler(argv) {
         loadTasks();
         let filteredTasks = tasks;
-        if (argv.status) {
-            filteredTasks = tasks.filter(tasks => tasks.status === argv.status);
+        if (argv._[1]) {
+            filteredTasks = tasks.filter(task => task.status === argv._[1]);
         }
-        console.log('Tasks:');
+        console.log('\nTasks:');
         filteredTasks.forEach(task => {
             console.log(`ID: ${task.id}, Description: ${task.description}, Status: ${task.status}`);
         });
     }
 });
+
+// Delete a task using positional argument
+yargs.command({
+    command: 'delete',
+    describe: 'Delete a task',
+    handler(argv) {
+        const toDelete = argv._[1]; // Get the second positional argument, which is the task description    
+        loadTasks();
+        tasks = tasks.filter(task => task.id !== toDelete);
+        saveTasks();
+        console.log('Task deleted successfully');
+    }
+});
+
+yargs.command({
+    command: 'delete-all',
+    describe: 'Delete all tasks',
+    handler() {
+        deleteAllElements();
+    }
+})
+
+// Date formatting function
+function formatDate(date) {
+    const options = { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+    return date.toLocaleString('en-US', options); // Example: "10/02/2024, 3:30:45 PM"
+}
+
+
+function deleteAllElements() {
+    tasks = [];
+    saveTasks();
+    console.log('All tasks deleted successfully');
+}
+
 // Parse the command-line arguments
-yargs.parse()
+yargs.parse();
